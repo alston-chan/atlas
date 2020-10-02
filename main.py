@@ -42,6 +42,12 @@ class AtlasAnnotationTool(QWidget):
         self.btn_floodfill_done = None
         self.btn_floodfill_cancel = None
 
+        # my_function
+        self.btn_floodfill_done2 = None
+        self.btn_floodfill_cancel2 = None
+        self.btn_display = None
+
+
         # setup
         self.setUpDisplay()
         self.wireWidgets()
@@ -59,6 +65,12 @@ class AtlasAnnotationTool(QWidget):
     def setOnClickListener(self):
         self.btn_floodfill_done.clicked.connect(self.btn_floodfill_done_clicked)
         self.btn_floodfill_cancel.clicked.connect(self.btn_floodfill_cancel_clicked)
+
+        # my_function
+        self.btn_floodfill_done2.clicked.connect(self.btn_floodfill_done_clicked)
+        self.btn_floodfill_cancel2.clicked.connect(self.btn_floodfill_cancel_clicked)
+        self.btn_display.clicked.connect(self.btn_display_clicked)
+
         self.upperScene.canvas.events.mouse_release.connect(self.topCanvasClicked)
         self.btn_common_load.clicked.connect(self.btn_common_load_clicked)
         self.btn_common_save.clicked.connect(self.btn_save_clicked)
@@ -85,6 +97,12 @@ class AtlasAnnotationTool(QWidget):
         tab_floodfill = self.base_form.system_mode_layout.itemAt(0).widget()
         self.btn_floodfill_done = tab_floodfill.widget(0).children()[1]
         self.btn_floodfill_cancel = tab_floodfill.widget(0).children()[2]
+
+        # my_function
+        self.btn_floodfill_done2 = tab_floodfill.widget(1).children()[1]
+        self.btn_floodfill_cancel2 = tab_floodfill.widget(1).children()[2]
+        self.btn_display = tab_floodfill.widget(1).children()[3]
+
 
 
     def setUpDisplay(self):
@@ -158,6 +176,23 @@ class AtlasAnnotationTool(QWidget):
         self.selected_points_id = []
         self.current_result_point_indices = []
         self.lowerScene.clear()
+
+    def btn_display_clicked(self):
+        '''
+        When display is clicked
+        1. display original pointcloud in upper display box
+        2. display arbitrary cropped out pointcloud in lower display box
+        '''
+        self.writeMessage("Displaying original pointcloud and arbitrary cropped out pointcloud")
+        self.upperScene.render(o3d.io.read_point_cloud("./data/scene.ply"))
+
+        arbitrary_points = [12493, 29466, 1822]
+
+        surface_to_crop = floodfill(arbitrary_points, self.upperScene.pcd)
+        self.current_result_point_indices = surface_to_crop
+        new_pcd = crop_reserve(self.upperScene.pcd, surface_to_crop)
+        self.lowerScene.render(new_pcd)
+
 
     def btn_delete_clicked(self):
         print("NOT IMPLEMENTED YET")
@@ -241,6 +276,8 @@ class AtlasAnnotationTool(QWidget):
                 self.upperScene.marker.update_gl_state(blend=True)
                 self.upperScene.marker.antialias = 1
                 self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
+                #self.upperScene.marker.set_data([pos], edge_color='red', face_color=colors, size=self.point_size * 5)
+
             # We pick the pixel directly under the click, unless it is
             # zero, in which case we look for the most common nonzero
             # pixel value in a square region centered on the click.
@@ -255,7 +292,14 @@ class AtlasAnnotationTool(QWidget):
             if idx > 0:
                 try:
                     points[idx]
+                    
+                    # basic way of displaying points when clicked
+                    # colors point clicked red
+                    colors[idx] = (1, 0, 0) 
+                    self.upperScene.marker.set_data(points, edge_color=colors, face_color=colors, size=self.point_size)
+
                     self.selected_points_id.append(idx)  # TODO how to you not add a point if it is index out of range
+
                     # p1.set_data(points, edge_color=colors, face_color=colors, size=2)
                     self.writeMessage("Selected Points {}".format(self.selected_points_id))
                 except IndexError:
